@@ -1,0 +1,24 @@
+name: Update VN Sector Flow (08:30 ICT)
+
+on:
+  schedule:
+    - cron: "30 1 * * *"  # 01:30 UTC = 08:30 sáng ICT mỗi ngày
+  workflow_dispatch: {}   # Cho phép bấm chạy thủ công
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - run: python update_flow.py
+      - name: Commit files
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add latest.json || true
+          git commit -m "auto: update sector flow" || echo "No changes"
+          git push
