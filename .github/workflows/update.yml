@@ -2,23 +2,36 @@ name: Update VN Sector Flow (08:30 ICT)
 
 on:
   schedule:
-    - cron: "30 1 * * *"  # 01:30 UTC = 08:30 sáng ICT mỗi ngày
-  workflow_dispatch: {}   # Cho phép bấm chạy thủ công
+    - cron: '30 1 * * *'   # 01:30 UTC = 08:30 sáng ICT mỗi ngày
+  workflow_dispatch: {}    # Cho phép bấm chạy thủ công
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}   # <- secret bạn đã thêm vào repository
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
-          python-version: "3.11"
-      - run: pip install -r requirements.txt
-      - run: python update_flow.py
-      - name: Commit files
+          persist-credentials: false   # tắt credentials mặc định để push bằng token của bạn
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install requirements
+        run: pip install -r requirements.txt
+
+      - name: Run update script
+        run: python update_flow.py
+
+      - name: Commit files and push
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add latest.json || true
-          git commit -m "auto: update sector flow" || echo "No changes"
-          git push
+          git commit -m "auto: update sector flow" || echo "No changes to commit"
+          git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git
+          git push origin HEAD:main || echo "Push failed"
